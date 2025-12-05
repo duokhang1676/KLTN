@@ -43,13 +43,14 @@ for i, cam_id in enumerate(CAMS):
     if cam_id == "0":
         gst_pipeline = (
             "nvarguscamerasrc sensor-id=0 ! "
-            "video/x-raw(memory:NVMM), width=416, height=416, framerate=30/1 ! "
+            "video/x-raw(memory:NVMM), width=1280, height=720, format=NV12, framerate=30/1 ! "
             "nvvidconv flip-method=0 ! "
             "video/x-raw, format=BGRx ! "
             "videoconvert ! "
-            "video/x-raw, format=BGR ! appsink"
+            "video/x-raw, format=BGR ! appsink drop=true"
         )
         cap = cv2.VideoCapture(gst_pipeline, cv2.CAP_GSTREAMER)
+
 
     # USB CAMERA
     else:
