@@ -14,26 +14,60 @@ CLOUDINARY_UPLOAD_PRESET = os.getenv("UPLOAD_PRESET")
 CLOUDINARY_UPLOAD_URL = os.getenv("CLOUDINARY_UPLOAD_URL")
 SLOT_COORDS_PATH = "app/resources/coordinates/slot-data/"
 REID_COORDS_PATH = "app/resources/coordinates/reid-data/"
-for i,cam_id in enumerate(CAMS):
+# for i,cam_id in enumerate(CAMS):
+#     print(f"Xử lý camera {i} với cam_id: {cam_id}")
+#     cap = None
+#     if cam_id == "0":
+#         gst_pipeline = (
+#         "nvarguscamerasrc ! "
+#         "video/x-raw(memory:NVMM), width=416, height=416, framerate=30/1 ! "
+#         "nvvidconv ! "
+#         "video/x-raw, format=BGRx ! "
+#         "videoconvert ! "
+#         "video/x-raw, format=BGR ! appsink"
+#         )
+#         cap = cv2.VideoCapture(gst_pipeline, cv2.CAP_GSTREAMER)
+#     else:
+#         cap = cv2.VideoCapture(cam_id)
+#     # cap.set(cv2.CAP_PROP_POS_FRAMES, 30)
+#     time.sleep(1)
+#     ret, frame = cap.read()
+#     time.sleep(1)
+#     ret, frame = cap.read()
+for i, cam_id in enumerate(CAMS):
     print(f"Xử lý camera {i} với cam_id: {cam_id}")
+
     cap = None
+
+    # CSI CAMERA (IMX219)
     if cam_id == "0":
         gst_pipeline = (
-        "nvarguscamerasrc ! "
-        "video/x-raw(memory:NVMM), width=416, height=416, framerate=30/1 ! "
-        "nvvidconv ! "
-        "video/x-raw, format=BGRx ! "
-        "videoconvert ! "
-        "video/x-raw, format=BGR ! appsink"
+            "nvarguscamerasrc sensor-id=0 ! "
+            "video/x-raw(memory:NVMM), width=416, height=416, framerate=30/1 ! "
+            "nvvidconv flip-method=0 ! "
+            "video/x-raw, format=BGRx ! "
+            "videoconvert ! "
+            "video/x-raw, format=BGR ! appsink"
         )
         cap = cv2.VideoCapture(gst_pipeline, cv2.CAP_GSTREAMER)
+
+    # USB CAMERA
     else:
-        cap = cv2.VideoCapture(cam_id)
-    # cap.set(cv2.CAP_PROP_POS_FRAMES, 30)
-    time.sleep(1)
+        device_id = int(cam_id)
+        cap = cv2.VideoCapture(device_id, cv2.CAP_V4L2)
+
+        # USB camera settings
+        cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        cap.set(cv2.CAP_PROP_FPS, 30)
+
+    # Wait and read
+    time.sleep(0.5)
     ret, frame = cap.read()
-    time.sleep(1)
+    time.sleep(0.5)
     ret, frame = cap.read()
+
     if ret:
         _, buffer = cv2.imencode('.jpg', frame)
         img_bytes = buffer.tobytes()
