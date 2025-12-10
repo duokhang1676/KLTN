@@ -28,12 +28,6 @@ def start_connect_bgm220():
         ser = serial.Serial(port, baudrate, timeout=1)
         print(f"[SUCCESS] Kết nối thành công với {port}")
         threading.Thread(target=play_sound, args=('connected_bgm220.mp3',)).start()
-        # API arduino
-        # 0: barie_in:0 (đóng barie vào)
-        # 1: barie_in:1 (mở barie vào)
-        # 2: barie_out:0 (đóng barie ra)
-        # 3: barie_out:1 (mở barie ra)
-        # 4: update_slot (cập nhật lại số chỗ trống và hướng đi)
         while True:
             time.sleep(0.2)  # Giảm từ 1s xuống 0.2s để đọc nhanh hơn
             # DEBUG: Kiểm tra buffer

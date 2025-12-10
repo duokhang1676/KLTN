@@ -358,7 +358,12 @@ def verify_car_out(license_plate):
     
             # Chuyển sang giờ (hours)
             parking_time_hours = parking_time_delta.total_seconds() / 3600
-            total_price = parking_time_hours * float(os.getenv('PRICE_PER_HOUR', '0'))
+            # Tính tiền
+            total_price = 0.0
+            if parking_time_hours < 1:
+                total_price = float(os.getenv('PRICE_PER_HOUR', '0'))
+            else:
+                total_price = parking_time_hours * float(os.getenv('PRICE_PER_HOUR', '0'))
             parking_time_hours = round(parking_time_hours, 2)
             total_price = round(total_price, 2)
             insert_history({

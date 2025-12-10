@@ -106,9 +106,15 @@ def start_detect_license():
                         threading.Thread(target=play_sound, args=('scan.mp3',)).start()
                         # Nếu xe vào kiểm tra biển số có đăng ký không và xe đã có trong bãi chưa
                         if globals.car_in:
-                            exists = any(item["license_plate"] == lp_temp for item in globals.registered_vehicles)
-                            exists_2 = any(item["license_plate"] == lp_temp for item in get_parked_vehicles_from_file()["list"])
-                            if exists and not exists_2:
+                            # Kiểm tra biển số có trong danh sách đăng ký và user_id trùng với qr_code không
+                            condition_1 = False
+                            condition_2 = False
+                            for item in globals.registered_vehicles:
+                                if item["license_plate"] == lp_temp and item["user_id"] == globals.qr_code:
+                                    condition_1 = True
+                                    break
+                            condition_2 = any(item["license_plate"] == lp_temp for item in get_parked_vehicles_from_file()["list"])
+                            if condition_1 and not condition_2:
                                 globals.license_plate = lp_temp
                                 save_new_license_plate_to_file(lp_temp, globals.qr_code)
                                 globals.start_detect_license = False
