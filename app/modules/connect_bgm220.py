@@ -47,11 +47,11 @@ def start_connect_bgm220():
             
             # Kiểm tra ánh sáng (chỉ xử lý khi có dữ liệu)
             current_light = globals.get_light()
-            if globals.turn_light and globals.light_state == False:
+            if globals.turn_light and globals.light_state == False and globals.auto_light_mode == False:
                 ser.write(b'turn_on_light\n')
                 print("[SEND] Bật đèn chiếu sáng")
                 globals.light_state = True
-            elif globals.turn_light == False and globals.light_state == True:
+            elif globals.turn_light == False and globals.light_state == True and globals.auto_light_mode == False:
                 ser.write(b'turn_off_light\n')
                 print("[SEND] Tắt đèn chiếu sáng")
                 globals.light_state = False
