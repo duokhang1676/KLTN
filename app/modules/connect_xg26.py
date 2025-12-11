@@ -176,8 +176,9 @@ async def connect_and_monitor():
                         "light": globals.light
                     }
                     if update_environment(data):
-                        print(data)
-                        print("[INFO] Environment data updated to cloud.")
+                        pass
+                        # print(data)
+                        # print("[INFO] Environment data updated to cloud.")
                     else:
                         print("[WARNING] Failed to update environment data to cloud.")
                     await asyncio.sleep(10) # Delay between reads

@@ -82,14 +82,14 @@ def get_registered_vehicles():
         "parking_id": os.getenv("PARKING_ID", "parking_001")
     }
     
-    print(f"[DEBUG] Calling URL: {url}")
-    print(f"[DEBUG] Payload: {payload}")
+    # print(f"[DEBUG] Calling URL: {url}")
+    # print(f"[DEBUG] Payload: {payload}")
     
     try:
         # Dùng requests thay vì urllib cho đơn giản
         response = requests.post(url, json=payload, timeout=10)
         
-        print(f"[DEBUG] Response status: {response.status_code}")
+        # print(f"[DEBUG] Response status: {response.status_code}")
         
         if response.status_code == 200:
             result = response.json()
@@ -103,7 +103,7 @@ def get_registered_vehicles():
                     }
                     for item in data
                 ]
-                print(f"[SUCCESS] Fetched {len(simplified_data)} registered vehicles")
+                # print(f"[SUCCESS] Fetched {len(simplified_data)} registered vehicles")
                 return simplified_data
             else:
                 print(f"[ERROR] API returned error: {result.get('message', 'Unknown error')}")

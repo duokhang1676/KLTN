@@ -315,6 +315,24 @@ def remove_vehicle_from_system(license_plate):
                 print(f"[REMOVE] Đã xóa mapping: global_id {global_id_to_remove} -> {license_plate}")
             else:
                 print(f"[INFO] Global ID {global_id_to_remove} không tồn tại trong map")
+            
+            # QUAN TRỌNG: Xóa TẤT CẢ keys trong canonical_map liên quan đến global_id này
+            # Để tránh global_id bị tái sử dụng nhầm cho xe khác
+            if globals.canonical_map is not None:
+                keys_to_remove = []
+                for key, gid in dict(globals.canonical_map).items():
+                    if gid == global_id_to_remove:
+                        keys_to_remove.append(key)
+                
+                for key in keys_to_remove:
+                    try:
+                        del globals.canonical_map[key]
+                        print(f"[REMOVE] Đã xóa canonical_map key: {key} -> {global_id_to_remove}")
+                    except Exception as e:
+                        print(f"[ERROR] Không thể xóa key {key}: {e}")
+                
+                if keys_to_remove:
+                    print(f"[REMOVE] Đã xóa {len(keys_to_remove)} keys từ canonical_map")
         except Exception as e:
             print(f"[ERROR] Lỗi khi xóa khỏi global_id_license_plate_map: {e}")
     else:
@@ -333,20 +351,34 @@ def remove_vehicle_from_system(license_plate):
 
 from app.modules.tracking_car import is_vehicle_being_tracked
 from app.modules.cloud_api import insert_history
+import datetime
 def verify_car_out(license_plate):
-    time.sleep(5)
+    print(f"[VERIFY] Bắt đầu xác minh xe ra: {license_plate}")
+    print(datetime.datetime.now())
+    time.sleep(10)
+    print(datetime.datetime.now())
     vehicle_info = get_parked_vehicles_by_license_plate(license_plate)
     if vehicle_info is None:
         print(f"[VERIFY] Xe {license_plate} không có trong danh sách xe đậu.")
         return False
     else:
+        print(f"[VERIFY] Tìm thấy thông tin xe {license_plate}: {vehicle_info}")
     # Kiểm tra xem xe có còn được track không
-        if is_vehicle_being_tracked(license_plate):
+        print(f"[VERIFY] Calling is_vehicle_being_tracked for {license_plate}...")
+        is_tracked, gid, cameras = is_vehicle_being_tracked(license_plate)
+        print(f"[VERIFY] Result: is_tracked={is_tracked}, global_id={gid}, cameras={cameras}")
+        if False:#is_tracked:
             print(f"[VERIFY] Xe {license_plate} vẫn đang được theo dõi, không xóa khỏi hệ thống.")
             return False
         else:
+            print(globals.global_id_license_plate_map)
+            print(get_parked_vehicles_from_file())
+            print(f"[VERIFY] Xe {license_plate} không còn được theo dõi, tiến hành xóa khỏi hệ thống.")
+            
             # Xóa thông tin xe khỏi danh sách xe trong bãi
             remove_vehicle_from_system(license_plate)
+            print(globals.global_id_license_plate_map)
+            print(get_parked_vehicles_from_file())
             # Tạo history khi xe ra
             # Chuyển time_in từ string sang datetime
             time_in_str = vehicle_info.get('time_in', '')
