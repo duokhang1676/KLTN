@@ -159,7 +159,7 @@ def process_video(video_path, window_name, model_path, cam_id,
         results = model.track(
             frame,
             persist=True,
-            conf=0.3,
+            conf=0.5,
             verbose=False,
             tracker=TRACKER_PATH
         )
@@ -298,22 +298,45 @@ def is_vehicle_being_tracked(license_plate, canonical_map=None):
         canonical_map = globals.canonical_map
         if canonical_map is None:
             print("[WARNING] canonical_map not initialized yet")
-            return False
+            return (False, None, [])
     
     global_id = get_global_id_by_license_plate(license_plate)
     
+    print(f"[DEBUG is_vehicle_being_tracked] License: {license_plate}")
+    print(f"[DEBUG] Found global_id: {global_id}")
+    print(f"[DEBUG] globals.global_id_license_plate_map: {dict(globals.global_id_license_plate_map)}")
+    
     if global_id is None:
-        return False
+        print(f"[DEBUG] global_id is None, returning (False, None, [])")
+        return (False, None, [])
+    
+    # KIỂM TRA QUAN TRỌNG: Xác minh global_id này VẪN thuộc về license_plate này
+    # (Tránh trường hợp global_id bị tái sử dụng cho xe khác)
+    current_license_for_gid = globals.global_id_license_plate_map.get(global_id)
+    if current_license_for_gid != license_plate:
+        print(f"[DEBUG] global_id {global_id} hiện tại thuộc về '{current_license_for_gid}', không phải '{license_plate}'")
+        print(f"[DEBUG] Xe {license_plate} không còn được track (global_id đã được tái sử dụng)")
+        return (False, None, [])
     
     # Tìm xe đang được track ở camera nào
     cameras_tracking = []
+    print(f"[DEBUG] Checking {len(VIDEO_SOURCES)} cameras...")
     for cam_idx in range(len(VIDEO_SOURCES)):
         bboxes = globals.bbox_by_cam.get(cam_idx, [])
+        print(f"[DEBUG] Camera {cam_idx}: {len(bboxes)} bboxes = {bboxes}")
         for obj_id, box in bboxes:
             # Kiểm tra key trong canonical_map
             key = f"c{cam_idx}_{obj_id}"
             gid = canonical_map.get(key)
+            print(f"[DEBUG]   Checking obj_id={obj_id}, key={key}, gid={gid}, target_global_id={global_id}")
             if gid == global_id:
+                # Double-check: global_id này có đúng license_plate đang tìm không?
+                verified_license = globals.global_id_license_plate_map.get(gid)
+                print(f"[DEBUG]   Double-check: gid {gid} -> license '{verified_license}' (looking for '{license_plate}')")
+                if verified_license != license_plate:
+                    print(f"[DEBUG]   SKIP: global_id {gid} không còn thuộc về {license_plate}")
+                    continue
+                print(f"[DEBUG] ✓ MATCH FOUND! Camera {cam_idx}, obj_id {obj_id}, bbox {box}")
                 cameras_tracking.append({
                     'camera_id': cam_idx,
                     'local_track_id': obj_id,
@@ -321,7 +344,11 @@ def is_vehicle_being_tracked(license_plate, canonical_map=None):
                 })
                 break
     
-    return (len(cameras_tracking) > 0)
+    # Trả về tuple đầy đủ: (is_tracked, global_id, cameras_info)
+    is_tracked = len(cameras_tracking) > 0
+    print(f"[DEBUG] Final result: is_tracked={is_tracked}, cameras_tracking={cameras_tracking}")
+    print(f"[DEBUG] " + "="*60)
+    return (is_tracked, global_id, cameras_tracking)
 
 
 def print_tracking_status(license_plate, canonical_map=None):

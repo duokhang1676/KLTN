@@ -1,9 +1,7 @@
 import serial
 import threading
 import time
-import datetime
-from app.modules.utils import play_sound, get_parked_vehicles_from_file, verify_car_out
-from app.modules.cloud_api import insert_history
+from app.modules.utils import play_sound, verify_car_out
 import dotenv
 import os
 from app.modules import globals
@@ -16,7 +14,7 @@ def start_connect_bgm220():
     baudrate = 115200
     
     # DEBUG: Kiểm tra port config
-    print(f"[DEBUG] Attempting to connect to UART Port: {port}, Baudrate: {baudrate}")
+    #print(f"[DEBUG] Attempting to connect to UART Port: {port}, Baudrate: {baudrate}")
     
     if port is None or port == "":
         print("[ERROR] UART_PORT not configured in .env file!")
@@ -31,8 +29,8 @@ def start_connect_bgm220():
         while True:
             time.sleep(0.2)  # Giảm từ 1s xuống 0.2s để đọc nhanh hơn
             # DEBUG: Kiểm tra buffer
-            if ser.in_waiting > 0:
-                print(f"[DEBUG] Bytes available in buffer: {ser.in_waiting}")
+            # if ser.in_waiting > 0:
+            #     print(f"[DEBUG] Bytes available in buffer: {ser.in_waiting}")
             
             # Danh sách dữ liệu từ Arduino
             if globals.update_display:
@@ -47,14 +45,16 @@ def start_connect_bgm220():
             
             # Kiểm tra ánh sáng (chỉ xử lý khi có dữ liệu)
             current_light = globals.get_light()
-            if globals.turn_light and globals.light_state == False:
+            if globals.turn_light and globals.light_state == False and globals.auto_light_mode == False:
                 ser.write(b'turn_on_light\n')
                 print("[SEND] Bật đèn chiếu sáng")
                 globals.light_state = True
-            elif globals.turn_light == False and globals.light_state == True:
+
+            elif globals.turn_light == False and globals.light_state == True and globals.auto_light_mode == False:
                 ser.write(b'turn_off_light\n')
                 print("[SEND] Tắt đèn chiếu sáng")
                 globals.light_state = False
+                
             if current_light is not None and globals.auto_light_mode:
                 if current_light < 100 and globals.light_state == False:
                     ser.write(b'turn_on_light\n')
@@ -71,11 +71,13 @@ def start_connect_bgm220():
                 ser.write(b'earthquake\n')   
                 print("[SEND] Mở barie (in và out)")
                 globals.earthquake = False
+
             if globals.open_in:
                 threading.Thread(target=play_sound, args=('xin-moi-vao.mp3',)).start()
                 ser.write(b'open_in\n')  # Gửi lệnh mở barie vào
                 print("[SEND] Mở barie vào")
                 globals.open_in = False
+
             if globals.open_out:
                 threading.Thread(target=play_sound, args=('tam-biet-quy-khach.mp3',)).start()
                 ser.write(b'open_out\n')  # Gửi lệnh mở barie ra
@@ -109,8 +111,8 @@ def start_connect_bgm220():
                     # Kiểm tra định dạng và tách key, value
                     if ":" in data:
                         key, value = data.split(":", 1)
-                        print(f"[PARSE] Key: '{key}', Value: '{value}'")
-                        
+                        #print(f"[PARSE] Key: '{key}', Value: '{value}'")
+            
                         # Xe vào
                         if key == "car_in":
                             if value == "1":
@@ -154,7 +156,6 @@ def start_connect_bgm220():
                 # Không có dữ liệu trong buffer
                 pass
     
-
     except serial.SerialException as e:
         print(f"[ERROR] Không thể kết nối tới {port}: {e}")
         print("[HELP] Kiểm tra:")

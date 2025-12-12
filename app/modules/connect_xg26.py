@@ -43,7 +43,6 @@ delay_threshold_shake = 15
 windows_length = 5
 windows = deque([0] * windows_length, maxlen=windows_length)
 pre_x, pre_y, pre_z = (0,0,0)
-# sound_file_path_lean = os.path.abspath(os.path.join(__file__, "../../..", "app/static/sounds/imu_alert.mp3"))
 sound_file_path_shake = "dong-dat.mp3"
 
 def compute_shake(x,y,z,pre_x, pre_y, pre_z, windows):
@@ -55,31 +54,9 @@ def compute_shake(x,y,z,pre_x, pre_y, pre_z, windows):
     windows.append(total_d)
     return sum(windows)
 
-def compute_lean(x,y,z):
-    x_init, y_init, z_init = globals.get_imu_data_init()
-    delta_x = abs(x - x_init)
-    delta_y = abs(y - y_init)
-    delta_z = abs(z - z_init)
-    total_lean = delta_x + delta_y + delta_z
-    return total_lean
-
 def imu_processing(x,y,z):
     global delay_count_lean, delay_threshold_lean, delay_count_shake, delay_threshold_shake, windows, windows_length, pre_x, pre_y, pre_z, sound_file_path_lean, sound_file_path_shake
-    # total_lean = compute_lean(x,y,z)
     total_shake = compute_shake(x,y,z, pre_x, pre_y, pre_z, windows)
-
-    # # Check for lean detection
-    # if total_lean > globals.get_threatshold_imu_lean():
-    #     delay_count_lean += 1
-    #     if delay_count_lean >= delay_threshold_lean: 
-    #         print(f"[ALERT] Significant lean detected! Total={total_lean}")
-    #         threading.Thread(target=play_sound, args=(sound_file_path_lean,)).start()
-    #         delay_count_lean = 0
-    #         delay_threshold_lean = 50
-    #         globals.set_shelf_lean(True)
-    # else:
-    #     delay_count_lean = 0
-    #     delay_threshold_lean = 30
 
     # Check for shake detection
     if total_shake > (globals.get_threatshold_imu_shake() * windows_length):
@@ -176,8 +153,8 @@ async def connect_and_monitor():
                         "light": globals.light
                     }
                     if update_environment(data):
-                        print(data)
-                        print("[INFO] Environment data updated to cloud.")
+                        pass
+                        #print("[INFO] Environment data updated to cloud.")
                     else:
                         print("[WARNING] Failed to update environment data to cloud.")
                     await asyncio.sleep(10) # Delay between reads

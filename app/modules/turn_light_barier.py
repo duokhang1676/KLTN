@@ -1,5 +1,4 @@
 import paho.mqtt.client as mqtt
-import time
 from app.modules import globals
 
 broker = "broker.hivemq.com"
@@ -16,9 +15,10 @@ def on_connect(client, userdata, flags, rc):
         print(f"[CONNECTED] Successfully connected to broker")
         # Subscribe tất cả các topics
         client.subscribe(TOPIC_LIGHT, qos=1)
+        client.subscribe(TOPIC_LIGHT_MODE, qos=1)
         client.subscribe(TOPIC_BARRIER_IN, qos=1)
         client.subscribe(TOPIC_BARRIER_OUT, qos=1)
-        print(f"[SUBSCRIBED] Topics: {TOPIC_LIGHT}, {TOPIC_BARRIER_IN}, {TOPIC_BARRIER_OUT}")
+        print(f"[SUBSCRIBED] Topics: {TOPIC_LIGHT}, {TOPIC_LIGHT_MODE}, {TOPIC_BARRIER_IN}, {TOPIC_BARRIER_OUT}")
     else:
         print(f"[ERROR] Connection failed with code: {rc}")
 
