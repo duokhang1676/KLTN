@@ -368,7 +368,7 @@ def verify_car_out(license_plate):
         print(f"[VERIFY] Calling is_vehicle_being_tracked for {license_plate}...")
         is_tracked, gid, cameras = is_vehicle_being_tracked(license_plate)
         print(f"[VERIFY] Result: is_tracked={is_tracked}, global_id={gid}, cameras={cameras}")
-        if False:#is_tracked:
+        if is_tracked:
             print(f"[VERIFY] Xe {license_plate} vẫn đang được theo dõi, không xóa khỏi hệ thống.")
             return False
         else:

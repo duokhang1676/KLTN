@@ -293,11 +293,18 @@ def is_vehicle_being_tracked(license_plate, canonical_map=None):
             print("[WARNING] canonical_map not initialized yet")
             return (False, None, [])
     
+    # QUAN TRỌNG: bbox_by_cam phải là manager.dict được share giữa processes
+    bbox_by_cam = globals.bbox_by_cam
+    if bbox_by_cam is None:
+        print("[WARNING] bbox_by_cam not initialized yet")
+        return (False, None, [])
+    
     global_id = get_global_id_by_license_plate(license_plate)
     
     print(f"[DEBUG is_vehicle_being_tracked] License: {license_plate}")
     print(f"[DEBUG] Found global_id: {global_id}")
     print(f"[DEBUG] globals.global_id_license_plate_map: {dict(globals.global_id_license_plate_map)}")
+    print(f"[DEBUG] bbox_by_cam type: {type(bbox_by_cam)}")
     
     if global_id is None:
         print(f"[DEBUG] global_id is None, returning (False, None, [])")
@@ -317,8 +324,9 @@ def is_vehicle_being_tracked(license_plate, canonical_map=None):
     DETECTION_TIMEOUT = 2.0  # Chỉ coi là đang track nếu detect trong vòng 2 giây gần nhất
     
     print(f"[DEBUG] Checking {len(VIDEO_SOURCES)} cameras...")
+    print(f"[DEBUG] bbox_by_cam keys: {list(bbox_by_cam.keys())}")
     for cam_idx in range(len(VIDEO_SOURCES)):
-        bboxes = globals.bbox_by_cam.get(cam_idx, [])
+        bboxes = bbox_by_cam.get(cam_idx, [])
         print(f"[DEBUG] Camera {cam_idx}: {len(bboxes)} bboxes")
         for bbox_data in bboxes:
             # Xử lý cả format cũ (obj_id, box) và format mới (obj_id, box, timestamp)
