@@ -196,6 +196,11 @@ def process_video(video_path, window_name, model_path, cam_id,
         found_vehicle_in_this_camera = False
         found_vehicle_bbox = None
         found_vehicle_obj_id = None
+        
+        # Debug: In giá trị search_vehicle mỗi vòng lặp (chỉ khi có search)
+        if search_vehicle != "":
+            print(f"[DEBUG SEARCH] Cam {cam_id} | Loop start: search_vehicle='{search_vehicle}'")
+            print(f"[DEBUG SEARCH] Cam {cam_id} | license_shared: {dict(license_shared)}")
 
         # YOLO + BoT-SORT tracking 
         results = model.track(
@@ -267,10 +272,16 @@ def process_video(video_path, window_name, model_path, cam_id,
                 # Kiểm tra nếu xe này đang được tìm kiếm
                 if search_vehicle != "" and global_id is not None:
                     vehicle_license = license_shared.get(global_id)
+                    print(f"[DEBUG SEARCH] Cam {cam_id} | search_vehicle='{search_vehicle}' | obj_id={obj_id} | global_id={global_id} | vehicle_license='{vehicle_license}'")
                     if vehicle_license == search_vehicle:
                         found_vehicle_in_this_camera = True
                         found_vehicle_bbox = (x1, y1, x2, y2)
                         found_vehicle_obj_id = obj_id
+                        print(f"[DEBUG SEARCH] ✓ MATCHED! Cam {cam_id} found vehicle {search_vehicle}")
+                    else:
+                        print(f"[DEBUG SEARCH] ✗ NOT MATCH: '{vehicle_license}' != '{search_vehicle}'")
+                elif search_vehicle != "":
+                    print(f"[DEBUG SEARCH] Cam {cam_id} | search_vehicle='{search_vehicle}' | obj_id={obj_id} | global_id={global_id} (skipped)")
                 
                 label = f"ID:{obj_id}/{int(global_id)}" if global_id else f"ID {obj_id}/-"
                 
@@ -290,11 +301,21 @@ def process_video(video_path, window_name, model_path, cam_id,
             ]
         else:
             bbox_shared[cam_id] = []
+            if search_vehicle != "":
+                print(f"[DEBUG SEARCH] Cam {cam_id} | No objects detected (boxes.id is None)")
+
+        # Debug: In trạng thái tìm kiếm
+        if search_vehicle != "":
+            print(f"[DEBUG SEARCH] Cam {cam_id} | After loop: search_vehicle='{search_vehicle}' | found={found_vehicle_in_this_camera}")
+            if found_vehicle_in_this_camera:
+                print(f"[DEBUG SEARCH] Cam {cam_id} | Found vehicle bbox={found_vehicle_bbox}, obj_id={found_vehicle_obj_id}")
 
         # Nếu tìm thấy xe đang được search và chưa upload
         if found_vehicle_in_this_camera and search_vehicle != "":
+            print(f"[DEBUG SEARCH] Cam {cam_id} | Entering upload logic...")
             # Kiểm tra xem đã upload cho xe này chưa
             already_uploaded = searched_vehicle_uploaded.get(search_vehicle, False)
+            print(f"[DEBUG SEARCH] Cam {cam_id} | already_uploaded={already_uploaded}")
             
             if not already_uploaded:
                 # Đánh dấu là đang xử lý (tạm lock)
