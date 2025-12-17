@@ -187,6 +187,9 @@ def process_video(video_path, window_name, model_path, cam_id,
         # Normalize to uppercase để so sánh case-insensitive với license plates
         search_vehicle = search_vehicle.upper() if search_vehicle else ""
         
+        # Lưu frame gốc CHỈ KHI đang tìm kiếm (tiết kiệm tài nguyên)
+        frame_original = frame.copy() if search_vehicle != "" else None
+        
         if search_vehicle != previous_search_vehicle:
             if previous_search_vehicle != "":
                 # Xóa flag của search cũ (dùng pop để tránh KeyError nếu đã bị xóa bởi process khác)
@@ -272,10 +275,12 @@ def process_video(video_path, window_name, model_path, cam_id,
                     vehicle_license = license_shared.get(global_id, "")
                     # So sánh case-insensitive (đã normalize search_vehicle thành uppercase)
                     if vehicle_license == search_vehicle:
-                        found_vehicle_in_this_camera = True
-                        found_vehicle_bbox = (x1, y1, x2, y2)
-                        found_vehicle_obj_id = obj_id
-                        print(f"[SEARCH] ✓ MATCHED! Cam {cam_id} found vehicle {search_vehicle} (obj_id={obj_id}, global_id={global_id})")
+                        # Chỉ process nếu chưa upload (tránh spam log và upload trùng)
+                        if not searched_vehicle_uploaded.get(search_vehicle, False):
+                            found_vehicle_in_this_camera = True
+                            found_vehicle_bbox = (x1, y1, x2, y2)
+                            found_vehicle_obj_id = obj_id
+                            print(f"[SEARCH] ✓ MATCHED! Cam {cam_id} found vehicle {search_vehicle} (obj_id={obj_id}, global_id={global_id})")
                 
                 label = f"ID:{obj_id}/{int(global_id)}" if global_id else f"ID {obj_id}/-"
                 
@@ -309,11 +314,8 @@ def process_video(video_path, window_name, model_path, cam_id,
                 print(f"[SEARCH] 🎯 Camera {cam_id} won the race! Uploading vehicle {search_vehicle}...")
                 print(f"[SEARCH] Vehicle bbox: {found_vehicle_bbox}, obj_id: {found_vehicle_obj_id}")
                 
-                # Copy frame GỐC (trước khi vẽ bất kỳ thứ gì) - CHỈ copy khi cần thiết để tiết kiệm tài nguyên
-                # Cần capture frame hiện tại, nhưng vì đã vẽ tracking boxes lên frame rồi,
-                # ta cần đọc lại frame từ buffer hoặc dùng frame trước khi vẽ
-                # Giải pháp: Lấy frame từ results (chưa vẽ)
-                frame_for_mqtt = results[0].orig_img.copy()
+                # Dùng frame gốc đã lưu (chưa vẽ gì) - chỉ vẽ xe đang tìm
+                frame_for_mqtt = frame_original.copy()
                 x1, y1, x2, y2 = found_vehicle_bbox
                 
                 # Vẽ bounding box và biển số màu xanh lá, thickness = 1
@@ -345,14 +347,15 @@ def process_video(video_path, window_name, model_path, cam_id,
                         
                         # Publish image URL to MQTT (chỉ 1 lần)
                         threading.Thread(target=publish_vehicle_image_url, args=(image_url,)).start()
+                        
+                        # Reset search_vehicle_shared về "" sau khi xử lý xong
+                        search_vehicle_shared['value'] = ""
+                        print(f"[SEARCH] 🔄 Reset search_vehicle to empty")
                     else:
                         print(f"[SEARCH] ❌ Lỗi upload Cloudinary: {response.status_code}")
+                        # Không reset nếu upload thất bại để có thể thử lại
                 except Exception as e:
                     print(f"[SEARCH] ❌ Exception khi upload: {e}")
-                
-                # Reset search_vehicle_shared về "" sau khi xử lý xong
-                search_vehicle_shared['value'] = ""
-                print(f"[SEARCH] 🔄 Reset search_vehicle to empty")
                 
                 # Nếu upload thất bại, bỏ lock để có thể thử lại
                 if not upload_success:
